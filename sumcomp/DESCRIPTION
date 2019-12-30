@@ -1,0 +1,28 @@
+Package: sumcomp
+Type: Package
+Title: Compare continuous data in multiple groups
+Version: 0.1.0
+Authors@R: 
+    c(person("Yu", "Cai", email = "yc7805@gmail.com", role = "cre"),
+    person("Wanyi", "He", email = "dorahwy713@gmail.com", role = "aut"))
+Maintainer: The package maintainer <yourself@somewhere.net>
+Description: Create data summaries for clinical studies and basic statistical analysis.
+    Display statistics (number of valid observations, mean, median, standard deviation, 
+    IQR, etc.) as well as the p-values from ANOVA and Kruskal-Wallis for multiple 
+    comparisons. Perform post-hoc comparison test results with different adjustment methods.
+    Create box-plots and bar charts for either single or double predictors with user-defined
+    (parametric or non-parametric) p-values from appropriate tests.
+Depends: R (>= 3.5.1), multcomp, ggplot2, tidyverse, ggfortify,
+        data.table, boot, MASS, shiny
+License: GPL-2
+Encoding: UTF-8
+LazyData: true
+Imports: multcomp, ggfortify, data.table, boot, MASS, shiny, ggplot2,
+        tidyverse
+RoxygenNote: 6.1.1.9000
+VignetteBuilder: knitr
+Suggests: rmarkdown, knitr
+NeedsCompilation: no
+Packaged: 2019-02-23 05:14:38 UTC; yucai
+Author: Yu Cai [cre],
+  Wanyi He [aut]

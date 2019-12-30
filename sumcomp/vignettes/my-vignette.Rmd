@@ -1,0 +1,346 @@
+---
+title: "sumcomp: Numerical and graphical summaries by groups"
+author: "Yu Cai, Wanyi He"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+
+# 1. Introduction
+
+The `sumcomp` package (Cai and He 2019) provides an efficient way to summarize continuous response variables by categorical explanatory variable(s) by creating nice tables and graphs to display the general information of the data as well as the results of inference. Tables and graphs can be exported to HTML and PDF by using R-markdown.
+
+Users should have the following packages installed before using the `sumcomp` package:
+
+`multcomp`, `ggfortify`, `data.table`, `MASS`, `shiny`, `ggplot2`, `tidyverse`
+
+Users need to have `sumcomp` package zip file in order to use the package. To load the package using R prompt, enter:
+
+`library(sumcomp)`
+
+This document is an overview of the usage of `sumcomp` package with real examples. Example datasets come from `boot` package called `poisons` (Box, G.E.P. and Cox, D.R. (1964) An analysis of transformations (with Discussion). Journal of the Royal Statistical Society, B, 26, 211–252.) and a teaching dataset `NOERmouse` from Weill Cornell Medicine. 
+
+Structure of this document:
+
+1. Introduction. Overview of `sumcomp` package, including required packages and example datasets.
+2. Package Functions. Brief introduction of the functions in `sumcomp` package.
+3. Using syntax (SINGLE predictor). 
+
+```{r, echo = FALSE, include = FALSE}
+library(sumcomp)
+```
+
+# 2. Functions
+
+The `sumcomp` package contains 8 functions
+
+1. TABLES  
+
+`groupsum` provides a summary table of continuous response variable by categorical explanatory variables.
+`p.adj.compare` provides a summary table of adjusted p-valuesfor pairwise comparisons.
+`compare.2.factors` provides a specific contrast test results for 2 factors contains 2 groups in each.
+
+2. GRAPHS  
+
+`boxcomp` provides a good visualization of boxplots for either 1 predictor or 2 predictors.
+`barchart` provides a good visualization of bar chart for either 1 predictor or 2 predictors.
+`pairplot` provides a good visualization of two-sample paired test for paired data.
+
+3. INFERENCE  
+
+`assumption.check` performs the normality diagnosis.
+`boxcoxTrans` performs the data transformation by boxcox procedure.
+
+# 3. Using syntax
+
+## Example Data
+
+Example dataset is from 'boot' package call 'poison' (Box, G.E.P. and Cox, D.R., 1964). It contains 48 records and 3 attributes. Here display the first 10 rows of the data.
+
+```{r, echo=FALSE, results='asis'}
+poisons <- boot::poisons
+knitr::kable(head(poisons, 10), align='c')
+```
+
+Variables in this data frame are:
+```{r echo=FALSE}
+poison_intro <- rbind(cbind('Variable Name', 'Relationship','Variable Type', 'Description'),
+                      cbind('time', 'Response', 'Continuous', 'Survival time of the animal in units of 10 hours'),
+                      cbind('poison', 'Explanatory', 'Factor', 'Factor with levels 1, 2 and 3 giving the type of poison used'),
+                      cbind('treat', 'Explanatory', 'Factor', 'Factor with levels A, B, C and D giving the treatment')) %>%
+  kableExtra::kable(align = 'c') %>%
+  kableExtra::kable_styling(full_width = F) %>%
+  kableExtra::column_spec(1, width = 13, bold = T, border_right = T) %>%
+  kableExtra::column_spec(2, width = 20, background = "lightyellow") %>%
+  kableExtra::column_spec(3, width = 13, background = "white") %>%
+  kableExtra::column_spec(4, width = 20, background = "lightyellow") %>%
+  kableExtra::row_spec(1, bold = T) 
+poison_intro
+```
+
+We are interested in the effects on animal survival time with different types of poison used. Different treatments given on different poisons might have different effects on animal survival time. Detecting such effect is also our purpose.
+
+## 3.1 Numerical Summary
+
+### 3.1.1 ONE predictor: poison
+
+The original data summaries are shown as below:
+
+```{r}
+groupsum(poisons$time, poisons$poison) %>%
+  kableExtra::kable(align = 'c') %>%
+  kableExtra::kable_styling(full_width = F)
+```
+
+### 3.1.2 TWO predictors: poison AND treat
+
+The original data summaries are shown as below:
+
+```{r}
+groupsum(poisons$time, poisons$poison, poisons$treat) %>%
+  kableExtra::kable(align = 'c') %>%
+  kableExtra::kable_styling(full_width = F)
+```
+
+## 3.2 Data Diagnosis
+
+In this part, the data diagnosis will be performed. We are going to to check whether the data violates the normality assumptions or not in order to determine whether a transformation is necessary to be proceed, repectively.
+
+### 3.2.1 Assumption Check (ONE predictor)
+```{r}
+assumption.check(poisons$time, poisons$poison)[1] %>%  
+  kableExtra::kable(align = 'c') %>%
+  kableExtra::kable_styling(full_width = F)
+```
+
+
+```{r fig.height=4.5, fig.width=7}
+assumption.check(poisons$time, poisons$poison)[2]
+```
+
+> For ONE predictor, both of the table and graphs show a violation to normality assumptions: data are not normally distributed and variance are not constant. Thus, a data transformation will be proceeded as below.
+
+### 3.2.2 Data Transformation (ONE predictor)
+
+The transformed data is shown below:
+
+```{r fig.show = 'asis'}
+poisons_trans <- boxcoxTrans(poisons$time, poisons$poison)
+head(poisons_trans) %>%
+  kableExtra::kable(align = 'c') %>%
+  kableExtra::kable_styling(full_width = F)
+```
+
+After transformtion, we check the normality assumptions one more time.
+
+```{R}
+assumption.check(poisons_trans$time_trans, poisons_trans$poison)[1] %>% 
+  kableExtra::kable(align = 'c') %>%
+  kableExtra::kable_styling(full_width = F)
+```
+
+```{r fig.height=4.5, fig.width=7}
+assumption.check(poisons_trans$time_trans, poisons_trans$poison)[2] 
+```
+
+> Both of the tables and plots show a normal distribution of the residual and a constant variance. Data `poisons_trans` for single predictor is ready for the rest of the analysis.
+
+### 3.2.3 Assumption Check (TWO predictors)
+
+```{r}
+assumption.check(poisons$time, poisons$poison, poisons$treat)[1]%>%
+ kableExtra::kable(align = 'c') %>%
+  kableExtra::kable_styling(full_width = F)
+```
+
+
+```{r fig.height=4.5, fig.width=7}
+assumption.check(poisons$time, poisons$poison, poisons$treat)[2]
+```
+
+> For TWO predictors, both of the table and graphs show a violation to normality assumptions: data are not normally distributed and variance are not constant. Thus, a data transformation will be proceeded as below.
+
+### 3.2.4 Data transformation (TWO predictors)
+
+The transformed data is shown below:
+
+```{r}
+poisons_trans_2<-boxcoxTrans(poisons$time, poisons$poison, poisons$treat)
+head(poisons_trans_2) %>%
+  kableExtra::kable(align = 'c') %>%
+  kableExtra::kable_styling(full_width = F)
+```
+
+After transformtion, we check the normality assumptions one more time.
+
+```{R}
+assumption.check(poisons_trans_2$time_trans, poisons_trans_2$poison, poisons_trans_2$`poisons$treat`)[1] %>%
+  kableExtra::kable(align = 'c') %>%
+  kableExtra::kable_styling(full_width = F)
+```
+
+```{r fig.height=4.5, fig.width=7}
+assumption.check(poisons_trans_2$time_trans, poisons_trans_2$poison, poisons_trans_2$`poisons$treat`)[2]
+```
+
+> Both of the tables and plots show a normal distribution of the residual and a constant variance. Data `poisons_trans_2` for 2 predictors is ready for the rest of the analysis.
+
+## 3.3 Data Summary
+
+### 3.3.1 Summary Table (ONE predictor)
+
+```{r}
+groupsum(poisons_trans_2$time_trans, poisons_trans_2$poison) %>%
+  kableExtra::kable(align = 'c') %>%
+  kableExtra::kable_styling(full_width = F)
+```
+
+### 3.3.2 Summary Table (TWO predictors)
+
+```{r}
+groupsum(poisons_trans_2$time_trans, poisons_trans_2$poison, poisons_trans_2$treat) %>%
+  kableExtra::kable(align = 'c') %>%
+  kableExtra::kable_styling(full_width = F)
+```
+
+## 3.4 Inference
+
+### 3.4.1 Adjusted p-values
+
+```{r}
+p.adj.compare(poisons$time, poisons$poison, compareall = T) %>%
+  kableExtra::kable(align = 'c') %>%
+  kableExtra::kable_styling(full_width = F)
+```
+
+```{r}
+p.adj.compare(poisons_trans_2$time_trans, poisons_trans_2$poison, compareal=T) %>%
+  kableExtra::kable(align = 'c') %>%
+  kableExtra::kable_styling(full_width = F)
+```
+
+> Based on the reuslt from these two table, we can see that the transformation did a good job. The result from t-test become more accurate than before. Also we can conclude that there's does exist difference between Type 3 and all other groups. Moreover, the table below shows that treatmeant A is different from B and D. 
+
+
+```{r}
+p.adj.compare(poisons_trans_2$time_trans, poisons_trans_2$treat, compareal=T) %>%
+  kableExtra::kable(align = 'c') %>%
+  kableExtra::kable_styling(full_width = F)
+```
+
+
+## 3.5 Graphical Summary
+
+The graphical summaries are designed to give a direct visualization of specific characteristics of the data. Boxplot and bar chart are the two main plots in this package. Boxplot is designed to display the __minimum__, __first quartile__, __median__, __third quartile__ and __maximum__ from the bottom to the top, respectively. Note that the difference between 3rd quantile and 1st quantile is the __IQR__. The points inside the boxplots are showing the mean values of the corresponding levels. The barchart shows the mean values as well as the standard errors of each levels. __Set 'normal = T', the global p-value will be calculated from ANOVA test while from Kruskal-Wallis test if 'normal = F'__.
+
+### 3.5.1 boxcomp (ONE predictor)
+```{r fig.height = 4.5, fig.width = 7, fig.show = 'asis'}
+boxcomp(poisons$time, poisons$poison, normal = T, xname = "Poison Type", 
+        xlabels = c("Type 1", "Type 2", "Type 3"), xlabelfont = 'Times New Roman', 
+        yname = "Time", fillcol1 = c('coral','coral1','coral2'), edgecol = 'coral4', 
+        titlesize = 14, main = "BOXPLOT of ANIMAL SURVIVAL TIMES", 
+        caption = "*Data from 'boot' library in R")
+```
+
+> Since the data had already been transformed to follow the normality assumption, we are supposed to use the ANOVA test for displaying the global p-value. P<0.0001 shows that the difference of survival time among different types of poisons are significant at a 0.05 significance level. The boxplot shows an approximately monotone decreasing in survival time moving from Type 1 to Type 3 poisons. However, a post-hoc test should be performed to obtain a more specific information of the difference between groups.
+
+### 3.5.2 boxcomp (TWO predictors)
+
+```{r fig.height = 4.5, fig.width = 7, fig.show = 'asis'}
+boxcomp(poisons$time, poisons$poison, poisons$treat, normal = T, xname = "Poison Type", 
+        yname = "Time", xlabels = c("Type 1", "Type 2", "Type 3"), 
+        xlabelfont = 'Times New Roman', fillcol2 = c('coral','coral1','coral2','coral3'), 
+        edgecol ='coral4', main = "BOXPLOT of ANIMAL SURVIVAL TIMES", titlesize = 14, 
+        legname = "Treatment Type", subtitle = 'Poison Type versus Treatment Type', 
+        subcol = 'grey48', caption="*Data from 'boot' library in R", globalp_pos = 1.3, 
+        pvalpos = 0.1, pointpos = 0.76)
+```
+
+> Since the data is right-skewed, we are supposed to use the non-parametric tests by setting normal = F. The three p-values in groups show that the effect of different treatments on different poisons are significantly different at a 0.05 significance level, indicating an interaction between poison types and treatment types. The boxes in each groups visually show a possible significant difference of survival time among different treatments. However, a post-hoc test should be performed to obtain a more specific information of the difference between groups.
+
+
+### 3.5.3 barchart (ONE predictor)
+```{r fig.height = 4.5, fig.width = 7, fig.show = 'asis'}
+barchart(poisons$time, poisons$poison, normal = T, xname = "Poison Type", 
+         xlabels = c("Type 1", "Type 2", "Type 3"), xlabelfont = 'Times New Roman', 
+         yname = "Time", fillcol1 = c('coral','coral1','coral2'), edgecol ='coral4', 
+         titlesize = 14, main = "BARCHART of ANIMAL SURVIVAL TIMES", 
+         caption="*Data from 'boot' library in R", globalp_pos = 1)
+```
+
+> The global p-value < 0.0001 in the barchart shows that the differences between levels are significant at a 0.05 significance level. The bar heights are monotone decreasing from Type 1 to Type 3 poison, showing that type 1 has the highest mean survival time while type 1 has the lowest. The length of the errorbars indicate that type 2 poison has the largest standard errors comparing to type 1 and type 3 since it has the longest errorbar. However, a post-hoc test should be performed to obtain a more specific information of the difference between groups.
+
+
+### 3.5.4 barchart (TWO predictors)
+
+```{r fig.height = 4.5, fig.width = 7, fig.show = 'asis'}
+barchart(poisons$time, poisons$poison, poisons$treat, normal = T, xname = "Poison Type", 
+         xlabels = c("Type 1", "Type 2", "Type 3"), xlabelfont = 'Times New Roman', 
+         yname = "Time", fillcol2 = c('coral','coral1','coral2', 'coral3'), 
+         edgecol ='coral4', titlesize = 14, main = "BARCHART of ANIMAL SURVIVAL TIMES", 
+         legname = "Treatment Type", subtitle = 'Poison Type versus Treatment Type', 
+         subcol = 'grey48', caption="*Data from 'boot' library in R", pvalpos = -0.05)
+```
+
+> The p-values of three poison types give the same information as the p-values from boxplot do. The height of treatment B is the highest in all three types of poisons, meaning that type B might be the most effective treatment to all three types of poisons. The errorbar of treatment B is the longest comparing to other treatment types which indicates that treatment B also has the largest standard error. However, a post-hoc test should be performed to obtain a more specific information of the difference between groups.
+
+
+# 4. Using syntax (Paired data)
+
+`pairplot` function is for generating two-sample paired plot for matched data. Data should be exactly TWO groups/levels in order to calculate the p-value from two-sample T-test.
+
+__Example Data Background__
+
+> ERα plays a role in regulating appetite. ERα knockout mice eat more than wild type mice and become obese with white adipose inflammation. In the current experiment, Dr. Levin compared wild type (WT) and nuclear only ERα (NOER) mice. The NOER mice cannot signal via the membrane but only through the nucleus. It is important to determine whether membranous ERα function controls appetite. There were 5 mice in each of the two groups. In the spreadsheet (top), one sees Food intake (in gms) over 12 weeks in WT vs. NOER mice. The amount listed is the amount of food consumed over the week per mouse. Body weights for WT and NOER mice are seen at the bottom. The food intake and body weights were measured for each mouse each week from weeks 1 to 12. Food intake for wild type (WT) mice in week 1 and week 12 will be given as an example. Record with same PairNum are regarded as a pair. Data from WCM Spring 2019 - Foundation of Biomedical Application. 
+
+## 4.1 Data overview
+
+```{r echo = FALSE}
+Week1 = c(40,43,37,35,45)
+Week12 =c(42,36,37,30,35)
+data.frame(PairNum=rep(1:5), Week1) %>%
+  kableExtra::kable(align = 'c') %>%
+  kableExtra::kable_styling(full_width = F)
+data.frame(PairNum=rep(1:5), Week12) %>%
+  kableExtra::kable(align = 'c') %>%
+  kableExtra::kable_styling(full_width = F)
+```
+
+## 4.2 Paired Plot
+```{r fig.height = 4.5, fig.width = 7, fig.show = 'asis'}
+pairplot.2(Week1, Week12, linecol = c('lightblue','deepskyblue2','deepskyblue4',
+           'blue','darkblue'), main = "PAIRED PLOT OF FOOD INTAKE", 
+           titlesize = 17, titlecol = 'dodgerblue4', xname = 'WEEK', 
+           xlabels = c('1','12'), yname = 'FOOD INTAKE (gm)', ynamesize = 15, 
+           subtitle = 'Paired graph of two sample t test', subsize = 13, 
+           subface = 'bold', subfont = 'Times New Roman', subcol = 'grey48', 
+           capsize = 9, capfont = 'Times New Roman', legname = 'Pair ID', 
+           leglab = c('Pair 1','Pair 2','Pair 3','Pair 4','Pair 5'),
+           caption = 'Note: Data from WCM Spring 2019 - Foundation of Biomedical Application', 
+           globalp_pos = 48, psize = 6)
+```
+
+> The paired plot of the given dataset gave a p-value = 0.145, indicating that the difference between groups are not significant at a 0.05 significance level. Three pairs show a negative slope, one group show a positive slope while the rest one shows no changes. There is no obvious pattern/trend in the plot thus a significant conclusion might not be given.
+
+
+# 5. Reference
+
+>“Writing an R Package from Scratch.” Not So Standard Deviations, 30 Apr. 2014, hilaryparker.com/2014/04/29/writing-an-r-package-from-scratch/.
+
+>Wickham, Hadley. R Packages. OReilly Media, 2015.
+
+>Joint, Marginal, and Conditional Probabilities, tinyheero.github.io/jekyll/update/2015/07/26/making-your-first-R-package.html. Wickham, Hadley. R Packages. OReilly Media, 2015.
+
+>Add pair lines in R, Retrieved from https://stackoverflow.com/questions/35226008/add-pair-lines-in-r
+
