@@ -1,0 +1,180 @@
+---
+title: "preAnalysis: Numeric summary and visualization for data preparation"
+author: "Yu Cai, Wanyi He"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# 1. Abstract
+
+This vignette document is going to give a detailed introduction on the `preAnalysis` package, which is designed for `NHANES` database. There are several required libraries needed to be loaded before using this package. Example data are from `NHANES` database and the functionalities of the function in this package will be introduced by performing analysis on the selected datasets. However, some of the functions are also friendly to datasets out of `NHANES` database. The data are publicly available at: https://www.cdc.gov/nchs/nhanes.htm.
+
+# 2. Introduction
+
+The `preAnalysis` package (Cai and He 2019) provides an efficient way to do data preparations for `NHANES` database. Detailed dataset information and relation graphs will be automatically generated. Some of the functions are also designed for general use. Tables and graphs can be exported to HTML and PDF by using R-markdown.
+
+Users should have the following packages installed before using the `preAnalysis` package:
+
+`nhanesA`, `pwr`, `knitr`, `igraph`, `shiny`, `sqldf`, `tidyverse`, `data.table`, `dplyr`, `kableExtra`
+
+Users need to have `preAnalysis` package zip file in order to use the package. To load the package using R prompt, enter:
+
+`library(preAnalysis)`
+
+This document is an overview of the usage of `preAnalysis` package with real examples. Example datasets come from National Health and Nutrition Examination Survey (NHANES), the category of demographics and laboratory category from 2003 to 2005. Data is accessable both online and in `NHANES` package. The `nhanesA` package might be required to access data from `NHNAES`. Detailed information of example datasets are shown below.
+
+1. Demographic Variables & Sample Weights (Filename: DEMO_C) (https://wwwn.cdc.gov/Nchs/Nhanes/2003-2004/DEMO_C.htm)
+2. Prostate Specific Antigen (PSA) (Filename: L11PSA_C) (https://wwwn.cdc.gov/Nchs/Nhanes/2003-2004/L11PSA_C.htm)
+3. Demographic Variables & Sample Weights (Filename: DEMO_D) (https://wwwn.cdc.gov/Nchs/Nhanes/2005-2006/DEMO_D.htm)
+4. Prostate Specific Antigen (PSA) (Filename: PSA_D) (https://wwwn.cdc.gov/Nchs/Nhanes/2005-2006/PSA_D.htm)
+
+Structure of this document:
+
+1. Abstract. The brief introduction of this vignette document.
+2. Introduction. Overview of `preAnalysis` package, including required packages and example datasets.
+3. Package Functions. Brief introduction of the functions in `preAnalysis` package.
+4. Using syntax (SINGLE predictor). 
+
+```{r, echo = FALSE, include = FALSE}
+library(preAnalysis)
+```
+
+# 3. Functions
+
+The `preAnalysis` package contains 6 functions
+
+1. TABLES  
+
+`sampleSize` provides a table of suggested sample sizes based on a range of user-defined power and effect size.  
+`showInfo` merges multiple tables from `NHANES` database and changes the labels of both variable names and values into a descriptive form.  
+`nhanesTableInfo` displays the detailed information of any raw data or merged data from `NHANES` database.  
+
+2. GRAPHS  
+
+`relationGraph` performs tests for each pairs of variables in the given dataset and generates a numeric summary of the relationships between pairs. Graph option is provided for visualizational purpose.  
+`tableTwo` gives a rough results on the univariate and multivariate analysis. Graph option is provided for visualizational purpose.  
+`barboxGraph` provides a good visualization of both boxplots and barchart.  
+
+# 4. Using syntax
+
+**1.** `sampleSize`  
+
+To conduct a clinical trial on prostatitis, as part of the experimental design, suppose that biostatisticians are going to give suggestions on the sample size decision where a detected difference between groups is from 0.1 to 0.2 and a power from 0.8 to 0.9 is required. 
+
+```{r}
+samplesize <- sampleSize(E.start = 0.1, power.start = 0.8, E.end = NULL, power.end = NULL,  sig.level = 0.05, alternative = "two.sided")
+samplesize %>%
+  kableExtra::kable(align = 'c') %>%
+  kableExtra::kable_styling(full_width = F)
+```
+
+Note that the given number in each cells are the minimum suggested sample size for each group to detect the corresponding effect size and power. 
+
+**2.** `showInfo`
+
+If conducting an observational study on prostatitis, researchers are considering using Prostate Specific Antigen data (`L11PSA_C`) and Demographic Variables & Sample Weights data (`DEMO_C`) from 2003 as well as Prostate Specific Antigen data (`PSA_D`) and Demographic Variables & Sample Weights data (`DEMO_D`) from 2005. The raw data is shown as below.
+
+```{r}
+lab2003 <- nhanes('L11PSA_C')
+demo2003 <- nhanes('DEMO_C')
+lab2005 <- nhanes('PSA_D')
+demo2005<- nhanes('DEMO_D')
+head(lab2003, n=6) %>%
+  kableExtra::kable(align = 'c') %>%
+  kableExtra::kable_styling(full_width = F)
+head(demo2003, n=6) %>%
+  kableExtra::kable(align = 'c') %>%
+  kableExtra::kable_styling(full_width = F)
+head(lab2005, n=6) %>%
+  kableExtra::kable(align = 'c') %>%
+  kableExtra::kable_styling(full_width = F)
+head(demo2005, n=6) %>%
+  kableExtra::kable(align = 'c') %>%
+  kableExtra::kable_styling(full_width = F)
+```
+
+As shown in the raw data above, the values are displayed as it stored (e.g, integers for levels) and the variables are displayed without descriptive labels. It is not friendly for users who want to combine multiple tables together for further analysis.  
+
+The `showInfo` function is designed for merging multiple tables at the same time by just entering the name of the datasets from `NHNAES` database. The function will automatically search for the corresponding datasets on NHANES websites. Descriptive labels for variable names and level names will be displayed instead of stored values.
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+merged <- showInfo(L11PSA_C, DEMO_C, PSA_D, DEMO_D)
+head(merged) %>%
+  kableExtra::kable(align = 'c') %>%
+  kableExtra::kable_styling(full_width = F) %>%
+  kableExtra::column_spec(1, width = 13, bold = T, border_right = T, background = "lightyellow") %>%
+  kableExtra::column_spec(2, width = 20) %>%
+  kableExtra::column_spec(3, width = 13) %>%
+  kableExtra::column_spec(4, width = 20)
+```
+
+**3.** `nhanesTableInfo`
+
+After combining the searched datasets, researcher probably would like to have a general look at the detailed information in the entire dataset. The `nhanesTableInfo` function is going to display the information, including variable names, types and descriptions, as well as mean (standard deviation) and median (min, max) for continuous variables and number of levels for categorical variables. Number of missing values and proportion of missingness will also be displayed. Note that `detail = T` is the command to display the full detailed information of each variable. `showfactor = 10` is going to display the detailed-level information for those categorical variables which contains less than 10 levels.
+
+```{r message=FALSE, warning=FALSE}
+nhanesTablesInfo(merged, detail = T, showfactor = 10)[[1]] %>%
+  kableExtra::kable(align = 'l') %>%
+  kableExtra::kable_styling(full_width = F) %>%
+  kableExtra::column_spec(1, width = 12, bold = T, border_right = T, background = "lightyellow") %>%
+  kableExtra::column_spec(2, width = 20) %>%
+  kableExtra::column_spec(3, width = 12) %>%
+  kableExtra::column_spec(4, width = 20) %>%
+  kableExtra::column_spec(5, width = 20)
+```
+
+
+**4.** `relationGraph`
+
+The merged dataset is appropriate for the analysis by using `nhanesTableInfo` function to have a general look at the detailed information. It is necessary to have a basic idea about the relationships or associations between each pairs of the variables before starting the main analysis, for example, to identify potential confounders. The `relationGraph` function provides a table of pairs that associations are significant at a user-defined statistical significance level. By setting `graph = T`, a relation graph will be displayed with the table. Note that the graph might not be clear if there exists too many associations. The dashed edges denote that the p-value of the comparisons are greater than 0.05 while solid edges are less than 0.05. If setting `show.p = T`, the graph is going to display the p-values on each edge. In order to display a clear graph, only `L11PSA_C` will be used as the example for this part. Set a significance level as 0.01. 
+
+```{r message=FALSE, warning=FALSE, fig.height = 4.5, fig.width = 7, fig.show = 'asis'}
+merged1 <- showInfo(L11PSA_C)
+relationGraph(merged1, alpha = 0.01, graph = T, show.p = T, edge.curved = 0.5, vertex.label.cex = 0.8, vertex.shape = 'circle', vertex.size = 25, edge.width = 1.5, margin = 0.05)
+```
+
+**5.** `tableTwo`
+
+With the purpose of primarily identifying the potential confounders, the `tableTwo` function is going to perform some simple univariate and multivariate analysis for the given datasets.
+
+```{r message=FALSE, warning=FALSE, fig.height = 4.5, fig.width = 7, fig.show = 'asis'}
+tableTwo(formula = INDFMPIR ~ RIAGENDR+ DMDBORN + RIDAGEMN, table = merged, Multi=T) %>%
+  kableExtra::kable(align = 'l') %>%
+  kableExtra::kable_styling(full_width = F)
+reuslt<-tableTwo(formula = RIAGENDR ~ INDFMPIR + DMDBORN + RIDAGEMN, table = merged, Multi=F) 
+reuslt[[1]]%>%
+  kableExtra::kable(align = 'l') %>%
+  kableExtra::kable_styling(full_width = F)
+reuslt[[2]]
+```
+
+**6.** `barboxGraph`
+
+The `barboxGraph` function is the upgrade version of `barchart` and `boxplot` functions from `sumcomp` package (Yu and He, 2019), which combines the two function into one with command `boxplot = T` or `barchart = T` to display the plots. Since only cleaned data are able to perform on `barchart` and `boxplot` functions, the upgraded `boxbarGraph` function is friendly to uncleaned data. However, if data are not qualified for doing tests, error messages will be generated.
+
+# 5. Contribution
+
+**Yu Cai**  
+1. Developed `sampleSize`, `showInfo`, `nhanesTableInfo` and `tableTwo` functions.  
+2. Generated final package file.  
+
+**Wanyi He**  
+1. Developed `relationGraph` function and upgraded `barboxGraph` function.  
+2. Collaborated on `tableTwo` function.  
+3. Wrote vignette file.  
+
+# 6. Reference
+
++ “NHANES Questionnaires, Datasets, and Related Documentation.” Centers for Disease Control and Prevention, Centers for Disease Control and Prevention, wwwn.cdc.gov/nchs/nhanes/.
++ Endres, Christopher J. Introducing NhanesA, 16 Oct. 2018, cran.r-project.org/web/packages/nhanesA/vignettes/Introducing_nhanesA.html. “NHANES Questionnaires, Datasets, and Related Documentation.” Centers for Disease Control and Prevention, Centers for Disease Control and Prevention, wwwn.cdc.gov/nchs/nhanes/.

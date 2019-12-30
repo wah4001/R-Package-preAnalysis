@@ -1,0 +1,27 @@
+Package: preAnalysis
+Type: Package
+Title: Prepare NHANES Data for Analysis
+Version: 0.1.0
+Authors@R: 
+    c(person("Yu", "Cai", email = "yc7805@gmail.com", role = "cre"),
+    person("Wanyi", "He", email = "dorahwy713@gmail.com", role = "aut"))
+Maintainer: The package maintainer <yourself@somewhere.net>
+Description: This package is designed for NHANES database. Data are from NHANES database and 
+  the functionalities of the function in this package will be introduced by performing analysis 
+  on the selected datasets. However, some of the functions are also friendly to datasets out of 
+  NHANES database. This package provides an efficient way to do data preparations for NHANES
+  database. Detailed dataset information and relation graphs will be automatically generated. 
+  Some of the functions are also designed for general use.
+Depends: R (>= 3.5.1), ggplot2, tidyverse, nhanesA, pwr, igraph, shiny,
+        data.table, sqldf, knitr, dplyr,kableExtra
+License: GPL-2
+Encoding: UTF-8
+LazyData: true
+Imports: tidyverse, nhanesA, pwr
+Suggests: knitr, rmarkdown
+VignetteBuilder: knitr
+RoxygenNote: 6.1.1.9000
+NeedsCompilation: no
+Packaged: 2019-04-14 09:14:36 UTC; yucai
+Author: Yu Cai [cre],
+  Wanyi He [aut]
